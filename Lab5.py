@@ -1,87 +1,196 @@
-import random
-import time
-from collections import deque
+import java.util.*;
+public class GraphComparison {
+    static final int VERTICES = 500; 
+    static final int MAX_DEGREE = 10; 
+    public static void main(String[] args) {
+        Random random = new Random();
+        GraphMatrix graphMatrix = new GraphMatrix(VERTICES);
+        GraphAdjList graphAdjList = new GraphAdjList(VERTICES);
+        GraphArrayList graphArrayList = new GraphArrayList(VERTICES);
 
-VERTICES = 500  # Number of vertices in the graph
-
-# Function to check if an edge exists
-def has_edge(edge_list, source, target):
-    return any((edge[0] == source and edge[1] == target) or 
-               (edge[0] == target and edge[1] == source) for edge in edge_list)
-
-# BFS algorithm
-def bfs(edge_list, start):
-    visited = [False] * VERTICES
-    queue = deque([start])
-    visited[start] = True
-
-    while queue:
-        current = queue.popleft()
-        for edge in edge_list:
-            neighbor = -1
-            if edge[0] == current:
-                neighbor = edge[1]
-            elif edge[1] == current:
-                neighbor = edge[0]
-            
-            if neighbor != -1 and not visited[neighbor]:
-                queue.append(neighbor)
-                visited[neighbor] = True
-
-# Measure BFS runtime
-def measure_bfs(edge_list):
-    start_time = time.time()
-    bfs(edge_list, 0)
-    end_time = time.time()
-    return end_time - start_time
-
-# DFS algorithm
-def dfs(edge_list, current, visited):
-    visited[current] = True
-    for edge in edge_list:
-        neighbor = -1
-        if edge[0] == current:
-            neighbor = edge[1]
-        elif edge[1] == current:
-            neighbor = edge[0]
+        for (int i = 1; i <= VERTICES; i++) {
+            for (int j = 0; j < MAX_DEGREE; j++) {
+                int neighbor = random.nextInt(VERTICES) + 1;
+                if (i != neighbor) {
+                    graphMatrix.addEdge(i, neighbor);
+                    graphAdjList.addEdge(i, neighbor);
+                    graphArrayList.addEdge(i, neighbor);
+                }
+            }
+        }
         
-        if neighbor != -1 and not visited[neighbor]:
-            dfs(edge_list, neighbor, visited)
+        graphMatrix.printMatrix();
+        
+        measureTime(() -> graphMatrix.bfs(1), "BFS with Adjacency Matrix");
+        measureTime(() -> graphAdjList.bfs(1), "BFS with Adjacency List");
+        measureTime(() -> graphArrayList.bfs(1), "BFS with Array List");
 
-# Measure DFS runtime
-def measure_dfs(edge_list):
-    start_time = time.time()
-    visited = [False] * VERTICES
-    dfs(edge_list, 0, visited)
-    end_time = time.time()
-    return end_time - start_time
+        measureTime(() -> graphMatrix.dfs(1), "DFS with Adjacency Matrix");
+        measureTime(() -> graphAdjList.dfs(1), "DFS with Adjacency List");
+        measureTime(() -> graphArrayList.dfs(1), "DFS with Array List");
+    }
+    private static void measureTime(Runnable algorithm, String description) {
+        long startTime = System.nanoTime();
+        algorithm.run();
+        long endTime = System.nanoTime();
+        System.out.println(description + ": " + (endTime - startTime) / 1e6 + " ms");
+    }
+}
+class GraphMatrix {
+    private final int[][] matrix;
+    private final int vertices;
 
-# Print edges in the graph
-def print_edge_list(edge_list):
-    for edge in edge_list:
-        print(f"{edge[0]} - {edge[1]}")
+    public GraphMatrix(int vertices) {
+        this.vertices = vertices;
+        this.matrix = new int[vertices + 1][vertices + 1];
+    }
 
-# Main function
-if __name__ == "__main__":
-    overall_start_time = time.time()
+    public void addEdge(int u, int v) {
+        matrix[u][v] = 1;
+        matrix[v][u] = 1;
+    }
+    public void printMatrix(){
+        for (int i=0; i<vertices; i++){
+            for (int j=0; j<vertices; j++){
+                System.out.print(matrix[i][j]+" ");
+            }
+            System.out.println();
+        }
+    }
 
-    # Generate the graph
-    edge_list = []
-    random.seed(42)  # Set seed for reproducibility
+    public void bfs(int start) {
+        boolean[] visited = new boolean[vertices + 1];
+        Queue<Integer> queue = new LinkedList<>();
+        queue.add(start);
+        visited[start] = true;
 
-    for i in range(VERTICES):
-        degree = random.randint(1, 10)  # Random degree between 1 and 10
-        for _ in range(degree):
-            neighbor = random.randint(0, VERTICES - 1)
-            if i != neighbor and not has_edge(edge_list, i, neighbor):
-                edge_list.append((i, neighbor))
+        while (!queue.isEmpty()) {
+            int node = queue.poll();
+            System.out.print(node + " ");
+            for (int i = 1; i <= vertices; i++) {
+                if (matrix[node][i] == 1 && !visited[i]) {
+                    queue.add(i);
+                    visited[i] = true;
+                }
+            }
+        }
+        System.out.println(); 
+    }
 
-    print("Ирмэгийн жагсаалт:")
-    print_edge_list(edge_list)
+    public void dfs(int start) {
+        boolean[] visited = new boolean[vertices + 1];
+        dfsHelper(start, visited);
+        System.out.println(); 
+    }
 
-    print("\nЦагийн үр дүн:")
-    print(f"BFS гүйцэтгэх хугацаа: {measure_bfs(edge_list):.6f} seconds")
-    print(f"DFS гүйцэтгэх хугацаа: {measure_dfs(edge_list):.6f} seconds")
+    private void dfsHelper(int node, boolean[] visited) {
+        visited[node] = true;
+        System.out.print(node + " "); // Print node
+        for (int i = 1; i <= vertices; i++) {
+            if (matrix[node][i] == 1 && !visited[i]) {
+                dfsHelper(i, visited);
+            }
+        }
+    }
+}
+class GraphAdjList {
+    private final List<List<Integer>> adjList;
 
-    overall_end_time = time.time()
-    print(f"Програмын нийт ажиллах хугацаа: {overall_end_time - overall_start_time:.6f} seconds")
+    public GraphAdjList(int vertices) {
+        adjList = new ArrayList<>();
+        for (int i = 0; i <= vertices; i++) {
+            adjList.add(new ArrayList<>());
+        }
+    }
+
+    public void addEdge(int u, int v) {
+        adjList.get(u).add(v);
+        adjList.get(v).add(u);
+    }
+
+    public void bfs(int start) {
+        boolean[] visited = new boolean[adjList.size()];
+        Queue<Integer> queue = new LinkedList<>();
+        queue.add(start);
+        visited[start] = true;
+
+        while (!queue.isEmpty()) {
+            int node = queue.poll();
+            System.out.print(node + " "); 
+            for (int neighbor : adjList.get(node)) {
+                if (!visited[neighbor]) {
+                    queue.add(neighbor);
+                    visited[neighbor] = true;
+                }
+            }
+        }
+        System.out.println();
+    }
+
+    public void dfs(int start) {
+        boolean[] visited = new boolean[adjList.size()];
+        dfsHelper(start, visited);
+        System.out.println(); 
+    }
+
+    private void dfsHelper(int node, boolean[] visited) {
+        visited[node] = true;
+        System.out.print(node + " "); 
+        for (int neighbor : adjList.get(node)) {
+            if (!visited[neighbor]) {
+                dfsHelper(neighbor, visited);
+            }
+        }
+    }
+}
+
+class GraphArrayList {
+    private final List<Integer>[] arrayList;
+
+    public GraphArrayList(int vertices) {
+        arrayList = new ArrayList[vertices + 1];
+        for (int i = 0; i <= vertices; i++) {
+            arrayList[i] = new ArrayList<>();
+        }
+    }
+
+    public void addEdge(int u, int v) {
+        arrayList[u].add(v);
+        arrayList[v].add(u);
+    }
+
+    public void bfs(int start) {
+        boolean[] visited = new boolean[arrayList.length];
+        Queue<Integer> queue = new LinkedList<>();
+        queue.add(start);
+        visited[start] = true;
+
+        while (!queue.isEmpty()) {
+            int node = queue.poll();
+            System.out.print(node + " "); 
+            for (int neighbor : arrayList[node]) {
+                if (!visited[neighbor]) {
+                    queue.add(neighbor);
+                    visited[neighbor] = true;
+                }
+            }
+        }
+        System.out.println(); 
+    }
+
+    public void dfs(int start) {
+        boolean[] visited = new boolean[arrayList.length];
+        dfsHelper(start, visited);
+        System.out.println(); 
+    }
+
+    private void dfsHelper(int node, boolean[] visited) {
+        visited[node] = true;
+        System.out.print(node + " ");
+        for (int neighbor : arrayList[node]) {
+            if (!visited[neighbor]) {
+                dfsHelper(neighbor, visited);
+            }
+        }
+    }
+}
