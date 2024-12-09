@@ -1,0 +1,11 @@
+#BlueJ class context
+comment0.target=AdjacencyMatrixGraph
+comment1.params=
+comment1.target=AdjacencyMatrixGraph()
+comment2.params=start
+comment2.target=void\ bfs(int)
+comment3.params=current\ visited
+comment3.target=void\ dfs(int,\ boolean[])
+comment4.params=args
+comment4.target=void\ main(java.lang.String[])
+numComments=5
